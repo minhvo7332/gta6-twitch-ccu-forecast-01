@@ -23,7 +23,8 @@ target's own hour-1 print. Two facts about past launches drive the details:
    whose hour 1 is still a few hundred viewers (unlock later in the UTC day)
    explodes by orders of magnitude once it unlocks. So each comparable is
    weighted by how close its hour-1 scale is to the target's, with a Gaussian
-   kernel on log viewers (sigma = 1.0 natural-log units):
+   kernel on log viewers (sigma = 1.15 natural-log units, tuned by
+   leave-one-out validation; the loss is flat for sigma between 1.1 and 1.2):
 
        w_i = exp(-(ln p1_i - ln p1)^2 / 2).
 
@@ -45,11 +46,15 @@ so the program always writes a valid forecast.
 
 Local validation (leave-one-out over the 37 comparables with an hour-1
 print in the kit's practice cases, scored with the contest's pinball loss
-on the log scale): mean loss 0.405 over all launches, 0.283 over the
-rolling-midnight-like launches -- against 0.930 / 0.541 for the house
+on the log scale, doubled so the median level equals absolute error):
+mean loss 0.402 over all launches, against 0.930 for the house
 persistence baseline on the same launches. On the practice-like subset
-(hour-1 print between 20k and 300k) the loss is 0.279 vs the baseline's
-0.341. The official practice baseline is about 0.387.
+(hour-1 print between 20k and 300k) the loss is 0.290 vs the baseline's
+0.349. The official practice baseline is about 0.387. The kernel width
+1.15 was chosen by the same leave-one-out sweep (1.0 gives 0.405 / 0.293);
+interpolated weighted quantiles, a spread-calibration factor, and a
+weight floor blending toward the unweighted quantiles were all tried and
+all scored worse.
 
 Runs offline on Python 3.13, standard library only, deterministic: the
 same case file always yields the same bytes. Reads every <id>.in in the
@@ -76,7 +81,11 @@ Z = [-1.6448536269514722, -0.6744897501960817, 0.0, 0.6744897501960817, 1.644853
 # The house baseline's spread, in natural-log units per square-root hour.
 BASELINE_SIGMA = 0.15
 # Width of the Gaussian kernel on log hour-1 viewers, in natural-log units.
-SCALE_SIGMA = 1.0
+# Tuned by leave-one-out validation over the kit's comparables (see the
+# module docstring): 1.15 beats 1.0 on both the overall and the
+# practice-like subsets, and the loss curve is flat between 1.1 and 1.2,
+# so this is a broad plateau, not a sharp optimum.
+SCALE_SIGMA = 1.15
 
 
 def round2(x: float):
